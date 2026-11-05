@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jardé & Debt Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased">
+
+    <!-- App Container -->
+    <div id="app" class="max-w-md mx-auto w-full h-full flex flex-col bg-white shadow-xl relative overflow-hidden">
+
+        <!-- Top Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 shadow-md flex justify-between items-center z-10">
+            <div>
+                <h1 id="header-title" class="text-xl font-bold tracking-tight">Den / Debt Tracker</h1>
+                <p id="header-subtitle" class="text-xs text-blue-100 opacity-90">Page 1: Manage Debts & Contacts</p>
+            </div>
+            <button onclick="openInfoModal()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition text-sm">
+                <i class="fa-solid fa-question"></i>
+            </button>
+        </header>
+
+        <!-- Main Content Area (Scrollable) -->
+        <main id="main-content" class="flex-1 overflow-y-auto pb-24 p-4 space-y-4">
+            
+            <!-- ================= PAGE 1: DEN / DEBT ================= -->
+            <div id="page-debt" class="space-y-4">
+                
+                <!-- Search & Filter Bar -->
+                <div class="flex gap-2 items-center">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search"></i>
+                        </span>
+                        <input type="text" id="search-input" oninput="renderDebts()" placeholder="البحث بالاسم أو الرقم..." 
+                            class="w-full pl-9 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+                    </div>
+                    <select id="sort-select" onchange="renderDebts()" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="date-desc">الأحدث</option>
+                        <option value="amount-desc">المبلغ الأعلى $</option>
+                        <option value="amount-asc">المبلغ الأقل $</option>
+                        <option value="name-asc">الاسم (أ-ي)</option>
+                    </select>
+                </div>
+
+                <!-- Summary Banner for Debts -->
+                <div class="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 flex justify-between items-center shadow-sm">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">إجمالي الدن المتبقي</span>
+                        <h2 id="total-debt-display" class="text-2xl font-extrabold text-indigo-900 mt-0.5">$0.00</h2>
+                    </div>
+                    <button onclick="openAddDebtModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/20 flex items-center gap-2 transition active:scale-95">
+                        <i class="fa-solid fa-plus"></i> إضافة شخص
+                    </button>
+                </div>
+
+                <!-- Debts List Container -->
+                <div id="debts-list" class="space-y-3">
+                    <!-- Dynamic debt cards inserted here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="debts-empty" class="hidden text-center py-12 px-4">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fa-solid fa-address-book"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-700 text-base">لا توجد ديون مسجلة</h3>
+                    <p class="text-slate-500 text-xs mt-1">اضغط على "إضافة شخص" لبدء تسجيل الديون.</p>
+                </div>
+            </div>
+
+            <!-- ================= PAGE 2: JARDÉ (DAILY BALANCE) ================= -->
+            <div id="page-jarde" class="space-y-4 hidden">
+                
+                <!-- Date Picker Card -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Shift / Entry Date</label>
+                    <input type="date" id="jarde-date" onchange="saveJardeData()" 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Manual Input Fields Card -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3.5">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cash & Accounts Breakdown</h3>
+
+                    <!-- Cash -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cash ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="jarde-cash" oninput="calculateJardeTotal()" placeholder="0.00"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Den (Auto-pulled from Page 1) -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-600">Den (Total Debts from Page 1)</label>
+                            <span class="text-[10px] text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Auto-Calculated</span>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="jarde-den" readonly
+                                class="w-full pl-8 pr-4 py-2.5 bg-indigo-50/50 border border-indigo-100 rounded-xl text-sm font-bold text-indigo-900 cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <!-- Alfa $ -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Alfa ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="jarde-alfa" oninput="calculateJardeTotal()" placeholder="0.00"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- App $ -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">App ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="jarde-app" oninput="calculateJardeTotal()" placeholder="0.00"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Whish $ -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Whish ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="jarde-whish" oninput="calculateJardeTotal()" placeholder="0.00"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Sum Card -->
+                <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-lg flex justify-between items-center">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Total Jardé Sum</span>
+                        <div id="jarde-total-display" class="text-3xl font-black mt-0.5 text-emerald-400">$0.00</div>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Sum of Cash + Den + Alfa + App + Whish</p>
+                    </div>
+                    <button onclick="saveJardeData(true)" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-3 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition active:scale-95 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> Save Sheet
+                    </button>
+                </div>
+
+                <!-- Past History / Log -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Saved Daily Logs</h3>
+                    <div id="jarde-history-list" class="space-y-2 max-h-48 overflow-y-auto">
+                        <!-- History items -->
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="absolute bottom-0 inset-x-0 bg-white border-t border-slate-200 h-16 flex justify-around items-center px-4 z-20 shadow-lg">
+            <button onclick="switchTab('debt')" id="nav-btn-debt" class="flex-1 flex flex-col items-center justify-center text-blue-600 font-semibold py-1 transition">
+                <i class="fa-solid fa-book-bookmark text-lg mb-0.5"></i>
+                <span class="text-[11px]">Den / Debt</span>
+            </button>
+            <div class="w-[1px] h-8 bg-slate-200"></div>
+            <button onclick="switchTab('jarde')" id="nav-btn-jarde" class="flex-1 flex flex-col items-center justify-center text-slate-400 font-medium py-1 transition">
+                <i class="fa-solid fa-wallet text-lg mb-0.5"></i>
+                <span class="text-[11px]">Jardé Balance</span>
+            </button>
+        </nav>
+
+        <!-- ================= MODALS ================= -->
+
+        <!-- Add/Edit Person Modal -->
+        <div id="modal-debt" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+                    <h3 id="modal-debt-title" class="font-bold text-base">إضافة شخص جديد</h3>
+                    <button onclick="closeModal('modal-debt')" class="text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <form id="form-debt" onsubmit="handleDebtSubmit(event)" class="p-5 space-y-4">
+                    <input type="hidden" id="debt-id">
+                    
+                    <!-- Extract from Contacts Button -->
+                    <div id="contact-picker-wrapper">
+                        <button type="button" onclick="extractFromContacts()" class="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-address-book text-emerald-600"></i> استخراج من جهات الاتصال (Contacts)
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">اسم الشخص *</label>
+                        <input type="text" id="debt-name" required placeholder="مثال: أحمد محمد"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">رقم الواتساب *</label>
+                        <input type="tel" id="debt-phone" required placeholder="مثال: +96170123456"
+                            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">مبلغ الدين ($) *</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="debt-amount" required placeholder="0.00"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeModal('modal-debt')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">إلغاء</button>
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/20 transition">حفظ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Partial Payment / Add Debt Amount Modal -->
+        <div id="modal-payment" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+                    <h3 id="payment-modal-title" class="font-bold text-base">تسجيل دفعة أو تعديل الدين</h3>
+                    <button onclick="closeModal('modal-payment')" class="text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <form id="form-payment" onsubmit="handlePaymentSubmit(event)" class="p-5 space-y-4">
+                    <input type="hidden" id="payment-debt-id">
+                    <input type="hidden" id="payment-action-type">
+                    <div>
+                        <label id="payment-label" class="block text-xs font-semibold text-slate-600 mb-1">المبلغ المدفوع أو المضاف ($)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
+                            <input type="number" step="0.01" id="payment-amount" required placeholder="مثال: 10"
+                                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <p id="payment-helper-text" class="text-[11px] text-slate-500 mt-1.5">إذا دفع الشخص جزءاً من الدين (مثلاً الدين 100 ودفع 10)، سيصبح الباقي 90 تلقائياً.</p>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeModal('modal-payment')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">إلغاء</button>
+                        <button type="submit" id="payment-submit-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-emerald-500/20 transition">تأكيد الدفع</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Merge Debts Modal -->
+        <div id="modal-merge" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+                    <h3 class="font-bold text-base">Merge Debts</h3>
+                    <button onclick="closeModal('modal-merge')" class="text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleMergeSubmit(event)" class="p-5 space-y-4">
+                    <input type="hidden" id="merge-source-id">
+                    <p class="text-xs text-slate-600">Merge <span id="merge-source-name" class="font-bold"></span>'s debt into another person's account. This will add their debt to the target person and remove this account.</p>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Target Person *</label>
+                        <select id="merge-target-id" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- Options populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" onclick="closeModal('modal-merge')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">Cancel</button>
+                        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/20 transition">Merge Accounts</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Modal -->
+        <div id="modal-info" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div class="bg-blue-600 text-white px-5 py-4 flex justify-between items-center">
+                    <h3 class="font-bold text-base">About Notebook Prototype</h3>
+                    <button onclick="closeModal('modal-info')" class="text-blue-100 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                <div class="p-5 space-y-3 text-xs text-slate-600 leading-relaxed">
+                    <p><strong class="text-slate-800">Page 1 (Den / Debt):</strong> Track debts in USD ($). Search, sort by amount or date, add/edit/remove persons, contact via WhatsApp directly, pay in full or partial amounts, and merge accounts.</p>
+                    <p><strong class="text-slate-800">Page 2 (Jardé):</strong> Daily shift cash flow sheet. Automatically pulls the total debt sum from Page 1 into the "Den" field. Enter Cash, Alfa, App, and Whish manually to instantly compute the grand Total.</p>
+                    <p class="text-[10px] text-slate-400 pt-2 border-t border-slate-100">All changes are securely saved in your device's local storage.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="absolute top-16 inset-x-4 mx-auto max-w-xs bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium z-50 transform -translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-msg">Success message</span>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State management
+        let debts = JSON.parse(localStorage.getItem('jarde_debts') || '[]');
+        let jardeHistory = JSON.parse(localStorage.getItem('jarde_history') || '[]');
+        let currentTab = 'debt';
+
+        // Initialize App on Load
+        window.onload = function() {
+            // Set default date for Jardé
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('jarde-date').value = today;
+
+            // Load saved Jardé fields if available for today, otherwise defaults
+            loadJardeDataForDate(today);
+            renderDebts();
+            updateTotalDenInJarde();
+        };
+
+        // Tab Switching
+        function switchTab(tab) {
+            currentTab = tab;
+            const debtPage = document.getElementById('page-debt');
+            const jardePage = document.getElementById('page-jarde');
+            const debtBtn = document.getElementById('nav-btn-debt');
+            const jardeBtn = document.getElementById('nav-btn-jarde');
+            const headerTitle = document.getElementById('header-title');
+            const headerSubtitle = document.getElementById('header-subtitle');
+
+            if (tab === 'debt') {
+                debtPage.classList.remove('hidden');
+                jardePage.classList.add('hidden');
+                debtBtn.className = "flex-1 flex flex-col items-center justify-center text-blue-600 font-semibold py-1 transition";
+                jardeBtn.className = "flex-1 flex flex-col items-center justify-center text-slate-400 font-medium py-1 transition";
+                headerTitle.innerText = "Den / Debt Tracker";
+                headerSubtitle.innerText = "Page 1: Manage Debts & Contacts";
+                renderDebts();
+            } else {
+                debtPage.classList.add('hidden');
+                jardePage.classList.remove('hidden');
+                jardeBtn.className = "flex-1 flex flex-col items-center justify-center text-blue-600 font-semibold py-1 transition";
+                debtBtn.className = "flex-1 flex flex-col items-center justify-center text-slate-400 font-medium py-1 transition";
+                headerTitle.innerText = "Jardé / Daily Balance";
+                headerSubtitle.innerText = "Page 2: Shift Cash Flow & Totals";
+                updateTotalDenInJarde();
+                renderJardeHistory();
+            }
+        }
+
+        // ================= PAGE 1 LOGIC (DEN / DEBT) =================
+
+        function renderDebts() {
+            const listEl = document.getElementById('debts-list');
+            const emptyEl = document.getElementById('debts-empty');
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            const sortVal = document.getElementById('sort-select').value;
+
+            // Filter
+            let filtered = debts.filter(d => d.name.toLowerCase().includes(searchVal) || d.phone.includes(searchVal));
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (sortVal === 'date-desc') return new Date(b.createdAt) - new Date(a.createdAt);
+                if (sortVal === 'amount-desc') return b.amount - a.amount;
+                if (sortVal === 'amount-asc') return a.amount - b.amount;
+                if (sortVal === 'name-asc') return a.name.localeCompare(b.name);
+                return 0;
+            });
+
+            // Calculate total debt
+            const totalDebt = debts.reduce((sum, d) => sum + Number(d.amount), 0);
+            document.getElementById('total-debt-display').innerText = '$' + totalDebt.toFixed(2);
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            let html = '';
+
+            filtered.forEach(d => {
+                const dateStr = new Date(d.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                const cleanPhone = d.phone.replace(/[^0-9+]/g, '');
+                
+                // Arabic WhatsApp Message
+                const waText = 'عزيزي ' + d.name + '، لديك مبلغ $' + Number(d.amount).toFixed(2) + '. يرجى الدفع في أقرب وقت ممكن. شكراً لك!';
+                const waMessage = encodeURIComponent(waText);
+                const waLink = 'https://wa.me/' + cleanPhone + '?text=' + waMessage;
+
+                html += `
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base">${escapeHtml(d.name)}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-xs text-slate-400"><i class="fa-solid fa-phone mr-1"></i>${escapeHtml(d.phone)}</span>
+                                    <span class="text-[10px] text-slate-400">• ${dateStr}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-slate-400 block font-medium">الدن</span>
+                                <span class="text-lg font-black text-rose-600">$${Number(d.amount).toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons Row -->
+                        <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-100">
+                            <a href="${waLink}" target="_blank" title="إرسال رسالة واتساب"
+                                class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
+                                <i class="fa-brands fa-whatsapp text-base"></i>
+                                <span class="text-[10px]">واتساب</span>
+                            </a>
+                            <button onclick="openPaymentModal('${d.id}', 'partial')" title="تسجيل دفعة جزئية"
+                                class="bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
+                                <i class="fa-solid fa-money-bill-wave text-sm"></i>
+                                <span class="text-[10px]">دفعة</span>
+                            </button>
+                            <button onclick="openPaymentModal('${d.id}', 'pay100')" title="دفع 100% (تصفير الدين)"
+                                class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
+                                <i class="fa-solid fa-circle-check text-sm"></i>
+                                <span class="text-[10px]">دفع 100%</span>
+                            </button>
+                            <button onclick="openMenuDropdown('${d.id}')" title="خيارات إضافية"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition relative">
+                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                                <span class="text-[10px]">خيارات</span>
+                            </button>
+                        </div>
+
+                        <!-- Dropdown menu for Edit/Merge/Delete -->
+                        <div id="dropdown-${d.id}" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-2 mt-2 flex flex-wrap gap-2 animate-in fade-in duration-150">
+                            <button onclick="openEditDebtModal('${d.id}')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                <i class="fa-solid fa-pen mr-1 text-blue-600"></i> تعديل
+                            </button>
+                            <button onclick="openMergeModal('${d.id}')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                <i class="fa-solid fa-code-merge mr-1 text-indigo-600"></i> دمج الدين
+                            </button>
+                            <button onclick="deleteDebt('${d.id}')" class="bg-white border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 ml-auto">
+                                <i class="fa-solid fa-trash mr-1"></i> حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+            updateTotalDenInJarde();
+        }
+
+        // Contact Picker API Integration
+        async function extractFromContacts() {
+            if (!('contacts' in navigator && 'select' in navigator.contacts)) {
+                showToast("عذراً، خاصية استخراج جهات الاتصال غير متوفرة في متصفحك.");
+                return;
+            }
+
+            try {
+                const props = ['name', 'tel'];
+                const opts = { multiple: false };
+                const contacts = await navigator.contacts.select(props, opts);
+
+                if (contacts && contacts.length > 0) {
+                    const contact = contacts[0];
+                    if (contact.name && contact.name[0]) {
+                        document.getElementById('debt-name').value = contact.name[0];
+                    }
+                    if (contact.tel && contact.tel[0]) {
+                        document.getElementById('debt-phone').value = contact.tel[0];
+                    }
+                    showToast("تم استخراج البيانات بنجاح!");
+                }
+            } catch (ex) {
+                console.error(ex);
+                showToast("فشل استخراج جهة الاتصال.");
+            }
+        }
+
+        // Open Add Debt Modal
+        function openAddDebtModal() {
+            document.getElementById('modal-debt-title').innerText = "إضافة شخص جديد";
+            document.getElementById('debt-id').value = '';
+            document.getElementById('debt-name').value = '';
+            document.getElementById('debt-phone').value = '';
+            document.getElementById('debt-amount').value = '';
+
+            const cpWrapper = document.getElementById('contact-picker-wrapper');
+            if ('contacts' in navigator && 'select' in navigator.contacts) {
+                cpWrapper.classList.remove('hidden');
+            } else {
+                cpWrapper.classList.add('hidden');
+            }
+
+            document.getElementById('modal-debt').classList.remove('hidden');
+        }
+
+        // Open Edit Debt Modal
+        function openEditDebtModal(id) {
+            const person = debts.find(d => d.id === id);
+            if (!person) return;
+
+            document.getElementById('modal-debt-title').innerText = "تعديل بيانات الشخص";
+            document.getElementById('debt-id').value = person.id;
+            document.getElementById('debt-name').value = person.name;
+            document.getElementById('debt-phone').value = person.phone;
+            document.getElementById('debt-amount').value = person.amount;
+
+            document.getElementById('contact-picker-wrapper').classList.add('hidden');
+            document.getElementById('modal-debt').classList.remove('hidden');
+        }
+
+        // Handle Add/Edit Debt Form Submission
+        function handleDebtSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('debt-id').value;
+            const name = document.getElementById('debt-name').value.trim();
+            const phone = document.getElementById('debt-phone').value.trim();
+            const amount = parseFloat(document.getElementById('debt-amount').value) || 0;
+
+            if (!name || !phone) {
+                showToast("يرجى إدخال الاسم ورقم الهاتف");
+                return;
+            }
+
+            if (id) {
+                const person = debts.find(d => d.id === id);
+                if (person) {
+                    person.name = name;
+                    person.phone = phone;
+                    person.amount = amount;
+                    showToast("تم تعديل بيانات " + name + " بنجاح");
+                }
+            } else {
+                const newPerson = {
+                    id: 'debt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    name: name,
+                    phone: phone,
+                    amount: amount,
+                    createdAt: new Date().toISOString()
+                };
+                debts.push(newPerson);
+                showToast("تم إضافة " + name + " بنجاح");
+            }
+
+            saveDebtsToStorage();
+            renderDebts();
+            closeModal('modal-debt');
+        }
+
+        function deleteDebt(id) {
+            const person = debts.find(d => d.id === id);
+            if (!person) return;
+            if (confirm("هل أنت متأكد من حذف " + person.name + "؟")) {
+                debts = debts.filter(d => d.id !== id);
+                saveDebtsToStorage();
+                renderDebts();
+                showToast("تم الحذف بنجاح");
+            }
+        }
+
+        function openMenuDropdown(id) {
+            const dropdown = document.getElementById('dropdown-' + id);
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
+
+        // Payment Modal
+        function openPaymentModal(id, action) {
+            const person = debts.find(d => d.id === id);
+            if (!person) return;
+
+            document.getElementById('payment-debt-id').value = id;
+            document.getElementById('payment-action-type').value = action;
+            document.getElementById('payment-amount').value = '';
+
+            const modalTitle = document.getElementById('payment-modal-title');
+            const helperText = document.getElementById('payment-helper-text');
+            const submitBtn = document.getElementById('payment-submit-btn');
+
+            if (action === 'pay100') {
+                if (confirm("هل أنت متأكد من تصفير دين " + person.name + " بالكامل؟")) {
+                    person.amount = 0;
+                    saveDebtsToStorage();
+                    renderDebts();
+                    showToast("تم تصفير دين " + person.name + " بنجاح");
+                }
+                return;
+            } else if (action === 'partial') {
+                modalTitle.innerText = "تسجيل دفعة لـ " + person.name + " (الدين الحالي: $" + person.amount.toFixed(2) + ")";
+                helperText.innerText = "أدخل المبلغ المدفوع (مثلاً: إذا كان الدين 100 ودفع 10، سيصبح الباقي 90).";
+                submitBtn.innerText = "خصم المبلغ المدفوع";
+            }
+
+            document.getElementById('modal-payment').classList.remove('hidden');
+        }
+
+        function handlePaymentSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('payment-debt-id').value;
+            const paidAmount = parseFloat(document.getElementById('payment-amount').value) || 0;
+            const person = debts.find(d => d.id === id);
+
+            if (person) {
+                person.amount -= paidAmount;
+                if (person.amount < 0) person.amount = 0;
+                
+                saveDebtsToStorage();
+                renderDebts();
+                closeModal('modal-payment');
+                showToast("تم تحديث دين " + person.name + " بنجاح. الباقي: $" + person.amount.toFixed(2));
+            }
+        }
+
+        // Merge Debts Logic
+        function openMergeModal(id) {
+            const person = debts.find(d => d.id === id);
+            if (!person) return;
+
+            document.getElementById('merge-source-id').value = person.id;
+            document.getElementById('merge-source-name').innerText = person.name;
+
+            const targetSelect = document.getElementById('merge-target-id');
+            targetSelect.innerHTML = '';
+
+            debts.filter(d => d.id !== id).forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name + ' ($' + d.amount.toFixed(2) + ')';
+                targetSelect.appendChild(opt);
+            });
+
+            if (targetSelect.options.length === 0) {
+                showToast("لا يوجد أشخاص آخرين لدمج الحسابات معهم.");
+                return;
+            }
+
+            document.getElementById('modal-merge').classList.remove('hidden');
+        }
+
+        function handleMergeSubmit(event) {
+            event.preventDefault();
+            const sourceId = document.getElementById('merge-source-id').value;
+            const targetId = document.getElementById('merge-target-id').value;
+
+            const sourcePerson = debts.find(d => d.id === sourceId);
+            const targetPerson = debts.find(d => d.id === targetId);
+
+            if (sourcePerson && targetPerson) {
+                targetPerson.amount += sourcePerson.amount;
+                debts = debts.filter(d => d.id !== sourceId);
+                saveDebtsToStorage();
+                renderDebts();
+                closeModal('modal-merge');
+                showToast("تم دمج الحساب بنجاح مع " + targetPerson.name);
+            }
+        }
+
+        function saveDebtsToStorage() {
+            localStorage.setItem('jarde_debts', JSON.stringify(debts));
+            updateTotalDenInJarde();
+        }
+
+
+        // ================= PAGE 2 LOGIC (JARDÉ) =================
+
+        function getTotalDebtSum() {
+            return debts.reduce(function(sum, d) { return sum + Number(d.amount); }, 0);
+        }
+
+        function updateTotalDenInJarde() {
+            const totalDen = getTotalDebtSum();
+            const denInput = document.getElementById('jarde-den');
+            if (denInput) {
+                denInput.value = totalDen.toFixed(2);
+            }
+            calculateJardeTotal();
+        }
+
+        function calculateJardeTotal() {
+            const cash = parseFloat(document.getElementById('jarde-cash').value) || 0;
+            const den = parseFloat(document.getElementById('jarde-den').value) || 0;
+            const alfa = parseFloat(document.getElementById('jarde-alfa').value) || 0;
+            const app = parseFloat(document.getElementById('jarde-app').value) || 0;
+            const whish = parseFloat(document.getElementById('jarde-whish').value) || 0;
+
+            const total = cash + den + alfa + app + whish;
+            document.getElementById('jarde-total-display').innerText = '$' + total.toFixed(2);
+            return total;
+        }
+
+        function saveJardeData(showAlert) {
+            const date = document.getElementById('jarde-date').value;
+            if (!date) return;
+
+            const cash = parseFloat(document.getElementById('jarde-cash').value) || 0;
+            const den = parseFloat(document.getElementById('jarde-den').value) || 0;
+            const alfa = parseFloat(document.getElementById('jarde-alfa').value) || 0;
+            const app = parseFloat(document.getElementById('jarde-app').value) || 0;
+            const whish = parseFloat(document.getElementById('jarde-whish').value) || 0;
+            const total = cash + den + alfa + app + whish;
+
+            const record = {
+                date: date,
+                cash: cash,
+                den: den,
+                alfa: alfa,
+                app: app,
+                whish: whish,
+                total: total,
+                updatedAt: new Date().toISOString()
+            };
+
+            const existingIndex = jardeHistory.findIndex(function(h) { return h.date === date; });
+            if (existingIndex >= 0) {
+                jardeHistory[existingIndex] = record;
+            } else {
+                jardeHistory.unshift(record);
+            }
+
+            localStorage.setItem('jarde_history', JSON.stringify(jardeHistory));
+            renderJardeHistory();
+
+            if (showAlert) {
+                showToast("تم حفظ ورقة الجرد بنجاح!");
+            }
+        }
+
+        function loadJardeDataForDate(dateStr) {
+            const record = jardeHistory.find(function(h) { return h.date === dateStr; });
+            if (record) {
+                document.getElementById('jarde-cash').value = record.cash || '';
+                document.getElementById('jarde-alfa').value = record.alfa || '';
+                document.getElementById('jarde-app').value = record.app || '';
+                document.getElementById('jarde-whish').value = record.whish || '';
+            } else {
+                document.getElementById('jarde-cash').value = '';
+                document.getElementById('jarde-alfa').value = '';
+                document.getElementById('jarde-app').value = '';
+                document.getElementById('jarde-whish').value = '';
+            }
+            updateTotalDenInJarde();
+        }
+
+        function renderJardeHistory() {
+            const container = document.getElementById('jarde-history-list');
+            if (!container) return;
+
+            if (jardeHistory.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">لا توجد سجلات محفوظة بعد.</p>';
+                return;
+            }
+
+            let html = '';
+            jardeHistory.slice(0, 10).forEach(function(h) {
+                html += `
+                    <div onclick="selectJardeHistory('${h.date}')" class="bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl p-3 flex justify-between items-center cursor-pointer transition">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block"><i class="fa-regular fa-calendar mr-1 text-blue-600"></i>${h.date}</span>
+                            <span class="text-[10px] text-slate-500">Cash: $${h.cash} | Alfa: $${h.alfa} | App: $${h.app} | Whish: $${h.whish}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block font-medium">Total</span>
+                            <span class="text-sm font-extrabold text-emerald-600">$${Number(h.total).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function selectJardeHistory(dateStr) {
+            document.getElementById('jarde-date').value = dateStr;
+            loadJardeDataForDate(dateStr);
+            showToast("تم تحميل ورقة تاريخ " + dateStr);
+        }
+
+        function openInfoModal() {
+            document.getElementById('modal-info').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('-translate-y-16', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(function() {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('-translate-y-16', 'opacity-0');
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+    </script>
+</body>
+</html>
