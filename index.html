@@ -235,7 +235,7 @@
         <div id="modal-payment" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
             <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
-                    <h3 id="payment-modal-title" class="font-bold text-base">تسجيل دفعة أو تعديل الدين</h3>
+                    <h3 id="payment-modal-title" class="font-bold text-base">تسجيل دفعة أو إضافة دين</h3>
                     <button onclick="closeModal('modal-payment')" class="text-slate-400 hover:text-white p-1">
                         <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
@@ -244,17 +244,17 @@
                     <input type="hidden" id="payment-debt-id">
                     <input type="hidden" id="payment-action-type">
                     <div>
-                        <label id="payment-label" class="block text-xs font-semibold text-slate-600 mb-1">المبلغ المدفوع أو المضاف ($)</label>
+                        <label id="payment-label" class="block text-xs font-semibold text-slate-600 mb-1">المبلغ ($)</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-semibold">$</span>
                             <input type="number" step="0.01" id="payment-amount" required placeholder="مثال: 10"
                                 class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
-                        <p id="payment-helper-text" class="text-[11px] text-slate-500 mt-1.5">إذا دفع الشخص جزءاً من الدين (مثلاً الدين 100 ودفع 10)، سيصبح الباقي 90 تلقائياً.</p>
+                        <p id="payment-helper-text" class="text-[11px] text-slate-500 mt-1.5">أدخل المبلغ المطلوب.</p>
                     </div>
                     <div class="flex gap-3 pt-2">
                         <button type="button" onclick="closeModal('modal-payment')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">إلغاء</button>
-                        <button type="submit" id="payment-submit-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-emerald-500/20 transition">تأكيد الدفع</button>
+                        <button type="submit" id="payment-submit-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-emerald-500/20 transition">تأكيد</button>
                     </div>
                 </form>
             </div>
@@ -296,7 +296,7 @@
                     </button>
                 </div>
                 <div class="p-5 space-y-3 text-xs text-slate-600 leading-relaxed">
-                    <p><strong class="text-slate-800">Page 1 (Den / Debt):</strong> Track debts in USD ($). Search, sort by amount or date, add/edit/remove persons, contact via WhatsApp directly, pay in full or partial amounts, and merge accounts.</p>
+                    <p><strong class="text-slate-800">Page 1 (Den / Debt):</strong> Track debts in USD ($). Search, sort by amount or date, add/edit/remove persons, contact via WhatsApp directly, pay in full or partial amounts, add new debt amounts, and merge accounts.</p>
                     <p><strong class="text-slate-800">Page 2 (Jardé):</strong> Daily shift cash flow sheet. Automatically pulls the total debt sum from Page 1 into the "Den" field. Enter Cash, Alfa, App, and Whish manually to instantly compute the grand Total.</p>
                     <p class="text-[10px] text-slate-400 pt-2 border-t border-slate-100">All changes are securely saved in your device's local storage.</p>
                 </div>
@@ -425,15 +425,15 @@
                                 <i class="fa-brands fa-whatsapp text-base"></i>
                                 <span class="text-[10px]">واتساب</span>
                             </a>
+                            <button onclick="openPaymentModal('${d.id}', 'add')" title="إضافة دين جديد على الحساب"
+                                class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
+                                <i class="fa-solid fa-plus-circle text-sm"></i>
+                                <span class="text-[10px]">إضافة دين</span>
+                            </button>
                             <button onclick="openPaymentModal('${d.id}', 'partial')" title="تسجيل دفعة جزئية"
                                 class="bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
                                 <i class="fa-solid fa-money-bill-wave text-sm"></i>
                                 <span class="text-[10px]">دفعة</span>
-                            </button>
-                            <button onclick="openPaymentModal('${d.id}', 'pay100')" title="دفع 100% (تصفير الدين)"
-                                class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition">
-                                <i class="fa-solid fa-circle-check text-sm"></i>
-                                <span class="text-[10px]">دفع 100%</span>
                             </button>
                             <button onclick="openMenuDropdown('${d.id}')" title="خيارات إضافية"
                                 class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs font-semibold flex flex-col items-center justify-center gap-0.5 transition relative">
@@ -444,6 +444,9 @@
 
                         <!-- Dropdown menu for Edit/Merge/Delete -->
                         <div id="dropdown-${d.id}" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-2 mt-2 flex flex-wrap gap-2 animate-in fade-in duration-150">
+                            <button onclick="openPaymentModal('${d.id}', 'pay100')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-50">
+                                <i class="fa-solid fa-circle-check mr-1"></i> دفع 100%
+                            </button>
                             <button onclick="openEditDebtModal('${d.id}')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100">
                                 <i class="fa-solid fa-pen mr-1 text-blue-600"></i> تعديل
                             </button>
@@ -579,7 +582,7 @@
             }
         }
 
-        // Payment Modal
+        // Payment / Add Debt Modal
         function openPaymentModal(id, action) {
             const person = debts.find(d => d.id === id);
             if (!person) return;
@@ -604,6 +607,12 @@
                 modalTitle.innerText = "تسجيل دفعة لـ " + person.name + " (الدين الحالي: $" + person.amount.toFixed(2) + ")";
                 helperText.innerText = "أدخل المبلغ المدفوع (مثلاً: إذا كان الدين 100 ودفع 10، سيصبح الباقي 90).";
                 submitBtn.innerText = "خصم المبلغ المدفوع";
+                submitBtn.className = "flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-emerald-500/20 transition";
+            } else if (action === 'add') {
+                modalTitle.innerText = "إضافة دين جديد على حساب " + person.name + " (الدين الحالي: $" + person.amount.toFixed(2) + ")";
+                helperText.innerText = "أدخل المبلغ المراد إضافته فوق الدين الحالي.";
+                submitBtn.innerText = "إضافة الدين";
+                submitBtn.className = "flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/20 transition";
             }
 
             document.getElementById('modal-payment').classList.remove('hidden');
@@ -612,17 +621,23 @@
         function handlePaymentSubmit(event) {
             event.preventDefault();
             const id = document.getElementById('payment-debt-id').value;
-            const paidAmount = parseFloat(document.getElementById('payment-amount').value) || 0;
+            const action = document.getElementById('payment-action-type').value;
+            const inputAmount = parseFloat(document.getElementById('payment-amount').value) || 0;
             const person = debts.find(d => d.id === id);
 
             if (person) {
-                person.amount -= paidAmount;
-                if (person.amount < 0) person.amount = 0;
+                if (action === 'partial') {
+                    person.amount -= inputAmount;
+                    if (person.amount < 0) person.amount = 0;
+                    showToast("تم خصم الدفعة بنجاح. الباقي: $" + person.amount.toFixed(2));
+                } else if (action === 'add') {
+                    person.amount += inputAmount;
+                    showToast("تم إضافة الدين بنجاح. المجموع الجديد: $" + person.amount.toFixed(2));
+                }
                 
                 saveDebtsToStorage();
                 renderDebts();
                 closeModal('modal-payment');
-                showToast("تم تحديث دين " + person.name + " بنجاح. الباقي: $" + person.amount.toFixed(2));
             }
         }
 
